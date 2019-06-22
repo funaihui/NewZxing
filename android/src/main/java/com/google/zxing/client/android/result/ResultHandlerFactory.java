@@ -42,7 +42,7 @@ public final class ResultHandlerFactory {
       case URI:
         return new URIResultHandler(activity, result);
       case WIFI:
-        return new WifiResultHandler(activity, result);
+//        return new WifiResultHandler(activity, result);
       case GEO:
         return new GeoResultHandler(activity, result);
       case TEL:

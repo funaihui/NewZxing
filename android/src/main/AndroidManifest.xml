@@ -31,8 +31,6 @@
   <uses-permission android:name="android.permission.CHANGE_WIFI_STATE"/>
   <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/>
 
-  <uses-sdk android:minSdkVersion="19" android:targetSdkVersion="22"/>
-
   <uses-feature android:name="android.hardware.camera.any"/>
   <uses-feature android:name="android.hardware.camera.autofocus" android:required="false"/>
   <uses-feature android:name="android.hardware.camera.flash" android:required="false"/>
@@ -44,7 +42,7 @@
                android:label="@string/app_name"
                android:allowBackup="true">
     <activity android:name=".CaptureActivity"
-              android:screenOrientation="sensorLandscape"
+              android:screenOrientation="portrait"
               android:clearTaskOnLaunch="true"
               android:stateNotNeeded="true"
               android:theme="@style/CaptureTheme"
@@ -108,32 +106,7 @@
         <data android:mimeType="text/plain"/>
       </intent-filter>
     </activity>
-    <activity android:name=".book.SearchBookContentsActivity"
-              android:label="@string/sbc_name"
-              android:stateNotNeeded="true"
-              android:screenOrientation="sensorLandscape">
-      <intent-filter>
-        <action android:name="com.google.zxing.client.android.SEARCH_BOOK_CONTENTS"/>
-        <category android:name="android.intent.category.DEFAULT"/>
-      </intent-filter>
-    </activity>
-    <activity android:name=".share.ShareActivity"
-              android:stateNotNeeded="true"
-              android:screenOrientation="user">
-      <intent-filter>
-        <action android:name="com.google.zxing.client.android.SHARE"/>
-        <category android:name="android.intent.category.DEFAULT"/>
-      </intent-filter>
-    </activity>
-    <activity android:name=".history.HistoryActivity"
-              android:label="@string/history_title"
-              android:stateNotNeeded="true"/>
-    <activity android:name=".share.BookmarkPickerActivity"
-              android:label="@string/bookmark_picker_name"
-              android:stateNotNeeded="true"/>
-    <activity android:name=".share.AppPickerActivity"
-              android:label="@string/app_picker_name"
-              android:stateNotNeeded="true"/>
+
     <activity android:name=".HelpActivity"
               android:label="@string/menu_help"
               android:screenOrientation="user"

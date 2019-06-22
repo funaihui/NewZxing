@@ -22,15 +22,9 @@ import com.google.zxing.Result;
 import com.google.zxing.ResultMetadataType;
 import com.google.zxing.ResultPoint;
 import com.google.zxing.client.android.camera.CameraManager;
-import com.google.zxing.client.android.clipboard.ClipboardInterface;
-import com.google.zxing.client.android.history.HistoryActivity;
-import com.google.zxing.client.android.history.HistoryItem;
-import com.google.zxing.client.android.history.HistoryManager;
 import com.google.zxing.client.android.result.ResultButtonListener;
 import com.google.zxing.client.android.result.ResultHandler;
 import com.google.zxing.client.android.result.ResultHandlerFactory;
-import com.google.zxing.client.android.result.supplement.SupplementalInfoRetriever;
-import com.google.zxing.client.android.share.ShareActivity;
 
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -101,16 +95,12 @@ public final class CaptureActivity extends Activity implements SurfaceHolder.Cal
   private ViewfinderView viewfinderView;
   private TextView statusView;
   private View resultView;
-  private Result lastResult;
   private boolean hasSurface;
-  private boolean copyToClipboard;
   private IntentSource source;
   private String sourceUrl;
-  private ScanFromWebPageManager scanFromWebPageManager;
   private Collection<BarcodeFormat> decodeFormats;
   private Map<DecodeHintType,?> decodeHints;
   private String characterSet;
-  private HistoryManager historyManager;
   private InactivityTimer inactivityTimer;
   private BeepManager beepManager;
   private AmbientLightManager ambientLightManager;
@@ -130,27 +120,25 @@ public final class CaptureActivity extends Activity implements SurfaceHolder.Cal
   @Override
   public void onCreate(Bundle icicle) {
     super.onCreate(icicle);
-
+//扫码的时候屏幕长亮
     Window window = getWindow();
     window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
     setContentView(R.layout.capture);
 
     hasSurface = false;
+    //控制activity在一段时间无操作自动finish
     inactivityTimer = new InactivityTimer(this);
+    //管理扫码后是否有声音和震动
     beepManager = new BeepManager(this);
+    //用来根据环境的明暗，自动开启关闭闪光灯
     ambientLightManager = new AmbientLightManager(this);
-
+    //加载一些默认的配置
     PreferenceManager.setDefaultValues(this, R.xml.preferences, false);
   }
 
   @Override
   protected void onResume() {
     super.onResume();
-    
-    // historyManager must be initialized here to update the history preference
-    historyManager = new HistoryManager(this);
-    historyManager.trimHistory();
-
     // CameraManager must be initialized here, not in onCreate(). This is necessary because we don't
     // want to open the camera driver and measure the screen size if we're going to show the help on
     // first launch. That led to bugs where the scanning rectangle was the wrong size and partially
@@ -162,10 +150,7 @@ public final class CaptureActivity extends Activity implements SurfaceHolder.Cal
 
     resultView = findViewById(R.id.result_view);
     statusView = (TextView) findViewById(R.id.status_view);
-
     handler = null;
-    lastResult = null;
-
     SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
 
     if (prefs.getBoolean(PreferencesActivity.KEY_DISABLE_AUTO_ORIENTATION, true)) {
@@ -181,76 +166,10 @@ public final class CaptureActivity extends Activity implements SurfaceHolder.Cal
     ambientLightManager.start(cameraManager);
 
     inactivityTimer.onResume();
-
-    Intent intent = getIntent();
-
-    copyToClipboard = prefs.getBoolean(PreferencesActivity.KEY_COPY_TO_CLIPBOARD, true)
-        && (intent == null || intent.getBooleanExtra(Intents.Scan.SAVE_HISTORY, true));
-
     source = IntentSource.NONE;
     sourceUrl = null;
-    scanFromWebPageManager = null;
     decodeFormats = null;
     characterSet = null;
-
-    if (intent != null) {
-
-      String action = intent.getAction();
-      String dataString = intent.getDataString();
-
-      if (Intents.Scan.ACTION.equals(action)) {
-
-        // Scan the formats the intent requested, and return the result to the calling activity.
-        source = IntentSource.NATIVE_APP_INTENT;
-        decodeFormats = DecodeFormatManager.parseDecodeFormats(intent);
-        decodeHints = DecodeHintManager.parseDecodeHints(intent);
-
-        if (intent.hasExtra(Intents.Scan.WIDTH) && intent.hasExtra(Intents.Scan.HEIGHT)) {
-          int width = intent.getIntExtra(Intents.Scan.WIDTH, 0);
-          int height = intent.getIntExtra(Intents.Scan.HEIGHT, 0);
-          if (width > 0 && height > 0) {
-            cameraManager.setManualFramingRect(width, height);
-          }
-        }
-
-        if (intent.hasExtra(Intents.Scan.CAMERA_ID)) {
-          int cameraId = intent.getIntExtra(Intents.Scan.CAMERA_ID, -1);
-          if (cameraId >= 0) {
-            cameraManager.setManualCameraId(cameraId);
-          }
-        }
-        
-        String customPromptMessage = intent.getStringExtra(Intents.Scan.PROMPT_MESSAGE);
-        if (customPromptMessage != null) {
-          statusView.setText(customPromptMessage);
-        }
-
-      } else if (dataString != null &&
-                 dataString.contains("http://www.google") &&
-                 dataString.contains("/m/products/scan")) {
-
-        // Scan only products and send the result to mobile Product Search.
-        source = IntentSource.PRODUCT_SEARCH_LINK;
-        sourceUrl = dataString;
-        decodeFormats = DecodeFormatManager.PRODUCT_FORMATS;
-
-      } else if (isZXingURL(dataString)) {
-
-        // Scan formats requested in query string (all formats if none specified).
-        // If a return URL is specified, send the results there. Otherwise, handle it ourselves.
-        source = IntentSource.ZXING_LINK;
-        sourceUrl = dataString;
-        Uri inputUri = Uri.parse(dataString);
-        scanFromWebPageManager = new ScanFromWebPageManager(inputUri);
-        decodeFormats = DecodeFormatManager.parseDecodeFormats(inputUri);
-        // Allow a sub-set of the hints to be specified by the caller.
-        decodeHints = DecodeHintManager.parseDecodeHints(inputUri);
-
-      }
-
-      characterSet = intent.getStringExtra(Intents.Scan.CHARACTER_SET);
-
-    }
 
     SurfaceView surfaceView = (SurfaceView) findViewById(R.id.preview_view);
     SurfaceHolder surfaceHolder = surfaceView.getHolder();
@@ -331,7 +250,7 @@ public final class CaptureActivity extends Activity implements SurfaceHolder.Cal
           finish();
           return true;
         }
-        if ((source == IntentSource.NONE || source == IntentSource.ZXING_LINK) && lastResult != null) {
+        if ((source == IntentSource.NONE || source == IntentSource.ZXING_LINK) ) {
           restartPreviewAfterDelay(0L);
           return true;
         }
@@ -363,14 +282,6 @@ public final class CaptureActivity extends Activity implements SurfaceHolder.Cal
     Intent intent = new Intent(Intent.ACTION_VIEW);
     intent.addFlags(Intents.FLAG_NEW_DOC);
     switch (item.getItemId()) {
-      case R.id.menu_share:
-        intent.setClassName(this, ShareActivity.class.getName());
-        startActivity(intent);
-        break;
-      case R.id.menu_history:
-        intent.setClassName(this, HistoryActivity.class.getName());
-        startActivityForResult(intent, HISTORY_REQUEST_CODE);
-        break;
       case R.id.menu_settings:
         intent.setClassName(this, PreferencesActivity.class.getName());
         startActivity(intent);
@@ -387,12 +298,8 @@ public final class CaptureActivity extends Activity implements SurfaceHolder.Cal
 
   @Override
   public void onActivityResult(int requestCode, int resultCode, Intent intent) {
-    if (resultCode == RESULT_OK && requestCode == HISTORY_REQUEST_CODE && historyManager != null) {
-      int itemNumber = intent.getIntExtra(Intents.History.ITEM_NUMBER, -1);
-      if (itemNumber >= 0) {
-        HistoryItem historyItem = historyManager.buildHistoryItem(itemNumber);
-        decodeOrStoreSavedBitmap(null, historyItem.getResult());
-      }
+    if (resultCode == RESULT_OK && requestCode == HISTORY_REQUEST_CODE) {
+
     }
   }
 
@@ -442,12 +349,10 @@ public final class CaptureActivity extends Activity implements SurfaceHolder.Cal
    */
   public void handleDecode(Result rawResult, Bitmap barcode, float scaleFactor) {
     inactivityTimer.onActivity();
-    lastResult = rawResult;
     ResultHandler resultHandler = ResultHandlerFactory.makeResultHandler(this, rawResult);
 
     boolean fromLiveScan = barcode != null;
     if (fromLiveScan) {
-      historyManager.addHistoryItem(rawResult, resultHandler);
       // Then not from history, so beep/vibrate and we have an image to draw on
       beepManager.playBeepSoundAndVibrate();
       drawResultPoints(barcode, scaleFactor, rawResult);
@@ -458,20 +363,12 @@ public final class CaptureActivity extends Activity implements SurfaceHolder.Cal
       case PRODUCT_SEARCH_LINK:
         handleDecodeExternally(rawResult, resultHandler, barcode);
         break;
-      case ZXING_LINK:
-        if (scanFromWebPageManager == null || !scanFromWebPageManager.isScanFromWebPage()) {
-          handleDecodeInternally(rawResult, resultHandler, barcode);
-        } else {
-          handleDecodeExternally(rawResult, resultHandler, barcode);
-        }
-        break;
       case NONE:
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
         if (fromLiveScan && prefs.getBoolean(PreferencesActivity.KEY_BULK_MODE, false)) {
           Toast.makeText(getApplicationContext(),
                          getResources().getString(R.string.msg_bulk_mode_scanned) + " (" + rawResult.getText() + ')',
                          Toast.LENGTH_SHORT).show();
-          maybeSetClipboard(resultHandler);
           // Wait a moment or else it will scan the same barcode continuously about 3 times
           restartPreviewAfterDelay(BULK_MODE_SCAN_DELAY_MS);
         } else {
@@ -527,7 +424,6 @@ public final class CaptureActivity extends Activity implements SurfaceHolder.Cal
   // Put up our own UI for how to handle the decoded contents.
   private void handleDecodeInternally(Result rawResult, ResultHandler resultHandler, Bitmap barcode) {
 
-    maybeSetClipboard(resultHandler);
 
     SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
 
@@ -588,13 +484,6 @@ public final class CaptureActivity extends Activity implements SurfaceHolder.Cal
     TextView supplementTextView = (TextView) findViewById(R.id.contents_supplement_text_view);
     supplementTextView.setText("");
     supplementTextView.setOnClickListener(null);
-    if (PreferenceManager.getDefaultSharedPreferences(this).getBoolean(
-        PreferencesActivity.KEY_SUPPLEMENTAL, true)) {
-      SupplementalInfoRetriever.maybeInvokeRetrieval(supplementTextView,
-                                                     resultHandler.getResult(),
-                                                     historyManager,
-                                                     this);
-    }
 
     int buttonCount = resultHandler.getButtonCount();
     ViewGroup buttonView = (ViewGroup) findViewById(R.id.result_button_view);
@@ -634,8 +523,6 @@ public final class CaptureActivity extends Activity implements SurfaceHolder.Cal
       }
       statusView.setText(getString(resultHandler.getDisplayTitle()) + " : " + rawResultString);
     }
-
-    maybeSetClipboard(resultHandler);
 
     switch (source) {
       case NATIVE_APP_INTENT:
@@ -684,22 +571,9 @@ public final class CaptureActivity extends Activity implements SurfaceHolder.Cal
             resultHandler.getDisplayContents() + "&source=zxing";
         sendReplyMessage(R.id.launch_product_query, productReplyURL, resultDurationMS);
         break;
-        
-      case ZXING_LINK:
-        if (scanFromWebPageManager != null && scanFromWebPageManager.isScanFromWebPage()) {
-          String linkReplyURL = scanFromWebPageManager.buildReplyURL(rawResult, resultHandler);
-          scanFromWebPageManager = null;
-          sendReplyMessage(R.id.launch_product_query, linkReplyURL, resultDurationMS);
-        }
-        break;
     }
   }
 
-  private void maybeSetClipboard(ResultHandler resultHandler) {
-    if (copyToClipboard && !resultHandler.areContentsSecure()) {
-      ClipboardInterface.setText(resultHandler.getDisplayContents(), this);
-    }
-  }
   
   private void sendReplyMessage(int id, Object arg, long delayMS) {
     if (handler != null) {
@@ -716,13 +590,15 @@ public final class CaptureActivity extends Activity implements SurfaceHolder.Cal
     if (surfaceHolder == null) {
       throw new IllegalStateException("No SurfaceHolder provided");
     }
+    //相机已经打开
     if (cameraManager.isOpen()) {
       Log.w(TAG, "initCamera() while already open -- late SurfaceView callback?");
       return;
     }
     try {
+      //打开相机并初始化硬件参数
       cameraManager.openDriver(surfaceHolder);
-      // Creating the handler starts the preview, which can also throw a RuntimeException.
+      // 实例化一个handler并开始预览.
       if (handler == null) {
         handler = new CaptureActivityHandler(this, decodeFormats, decodeHints, characterSet, cameraManager);
       }
@@ -759,7 +635,6 @@ public final class CaptureActivity extends Activity implements SurfaceHolder.Cal
     statusView.setText(R.string.msg_default_status);
     statusView.setVisibility(View.VISIBLE);
     viewfinderView.setVisibility(View.VISIBLE);
-    lastResult = null;
   }
 
   public void drawViewfinder() {
