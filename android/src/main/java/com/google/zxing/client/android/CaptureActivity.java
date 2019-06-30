@@ -447,8 +447,8 @@ public final class CaptureActivity extends Activity implements SurfaceHolder.Cal
     TextView formatTextView = (TextView) findViewById(R.id.format_text_view);
     formatTextView.setText(rawResult.getBarcodeFormat().toString());
 
-    TextView typeTextView = (TextView) findViewById(R.id.type_text_view);
-    typeTextView.setText(resultHandler.getType().toString());
+//    TextView typeTextView = (TextView) findViewById(R.id.type_text_view);
+//    typeTextView.setText(resultHandler.getType().toString());
 
     DateFormat formatter = DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT);
     TextView timeTextView = (TextView) findViewById(R.id.time_text_view);
@@ -476,10 +476,10 @@ public final class CaptureActivity extends Activity implements SurfaceHolder.Cal
     }
 
     CharSequence displayContents = resultHandler.getDisplayContents();
-    TextView contentsTextView = (TextView) findViewById(R.id.contents_text_view);
-    contentsTextView.setText(displayContents);
+//    TextView contentsTextView = (TextView) findViewById(R.id.contents_text_view);
+//    contentsTextView.setText(displayContents);
     int scaledSize = Math.max(22, 32 - displayContents.length() / 4);
-    contentsTextView.setTextSize(TypedValue.COMPLEX_UNIT_SP, scaledSize);
+//    contentsTextView.setTextSize(TypedValue.COMPLEX_UNIT_SP, scaledSize);
 
     TextView supplementTextView = (TextView) findViewById(R.id.contents_supplement_text_view);
     supplementTextView.setText("");

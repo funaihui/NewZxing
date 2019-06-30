@@ -78,6 +78,7 @@ public final class CameraManager {
   public synchronized void openDriver(SurfaceHolder holder) throws IOException {
     OpenCamera theCamera = camera;
     if (theCamera == null) {
+      //更具requestedCameraId打开对应的摄像头
       theCamera = OpenCameraInterface.open(requestedCameraId);
       if (theCamera == null) {
         throw new IOException("Camera.open() failed to return object from driver");
@@ -251,21 +252,30 @@ public final class CameraManager {
    */
   public synchronized Rect getFramingRectInPreview() {
     if (framingRectInPreview == null) {
+      //获取中间扫描框的矩形
       Rect framingRect = getFramingRect();
       if (framingRect == null) {
         return null;
       }
       Rect rect = new Rect(framingRect);
+      // 生成图像的尺寸
       Point cameraResolution = configManager.getCameraResolution();
+      //屏幕的尺寸
       Point screenResolution = configManager.getScreenResolution();
       if (cameraResolution == null || screenResolution == null) {
         // Called early, before init even finished
         return null;
       }
-      rect.left = rect.left * cameraResolution.x / screenResolution.x;
-      rect.right = rect.right * cameraResolution.x / screenResolution.x;
-      rect.top = rect.top * cameraResolution.y / screenResolution.y;
-      rect.bottom = rect.bottom * cameraResolution.y / screenResolution.y;
+//      图片二维码的区域
+//      rect.left = rect.left * cameraResolution.x / screenResolution.x;
+//      rect.right = rect.right * cameraResolution.x / screenResolution.x;
+//      rect.top = rect.top * cameraResolution.y / screenResolution.y;
+//      rect.bottom = rect.bottom * cameraResolution.y / screenResolution.y;
+      rect.left = rect.left * cameraResolution.y / screenResolution.x;
+      rect.right = rect.right * cameraResolution.y / screenResolution.x;
+      rect.top = rect.top * cameraResolution.x / screenResolution.y;
+      rect.bottom = rect.bottom * cameraResolution.x / screenResolution.y;
+
       framingRectInPreview = rect;
     }
     return framingRectInPreview;

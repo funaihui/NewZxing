@@ -57,9 +57,11 @@ final class CameraConfigurationManager {
   void initFromCameraParameters(OpenCamera camera) {
     Camera.Parameters parameters = camera.getCamera().getParameters();
     WindowManager manager = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
+    //获取WindowManager默认的Display
     Display display = manager.getDefaultDisplay();
-
+    //屏幕的旋转角度
     int displayRotation = display.getRotation();
+
     int cwRotationFromNaturalToDisplay;
     switch (displayRotation) {
       case Surface.ROTATION_0:
@@ -186,6 +188,7 @@ final class CameraConfigurationManager {
     }
 
     parameters.setPreviewSize(bestPreviewSize.x, bestPreviewSize.y);
+//    parameters.setPreviewSize(bestPreviewSize.y, bestPreviewSize.x);
 
     theCamera.setParameters(parameters);
 
