@@ -45,7 +45,7 @@ import java.util.Map;
  */
 public final class CaptureActivityHandler extends Handler {
 
-  private static final String TAG = CaptureActivityHandler.class.getSimpleName();
+  private static final String TAG = "PreviewCallback";
 
   private final CaptureActivity activity;
   private final DecodeThread decodeThread;
@@ -95,6 +95,7 @@ public final class CaptureActivityHandler extends Handler {
           }
           scaleFactor = bundle.getFloat(DecodeThread.BARCODE_SCALED_FACTOR);          
         }
+        Log.e(TAG, "二维码的结果为: "+((Result) message.obj).getText() );
         activity.handleDecode((Result) message.obj, barcode, scaleFactor);
         break;
       case R.id.decode_failed:
@@ -159,7 +160,7 @@ public final class CaptureActivityHandler extends Handler {
     removeMessages(R.id.decode_failed);
   }
 
-  private void restartPreviewAndDecode() {
+  public void restartPreviewAndDecode() {
     if (state == State.SUCCESS) {
       state = State.PREVIEW;
       cameraManager.requestPreviewFrame(decodeThread.getHandler(), R.id.decode);

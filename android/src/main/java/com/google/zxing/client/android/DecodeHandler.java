@@ -26,6 +26,7 @@ import com.google.zxing.Result;
 import com.google.zxing.common.GlobalHistogramBinarizer;
 import com.google.zxing.common.HybridBinarizer;
 
+import android.hardware.Camera;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -34,15 +35,18 @@ import android.util.Log;
 
 import java.io.ByteArrayOutputStream;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 final class DecodeHandler extends Handler {
 
-  private static final String TAG = DecodeHandler.class.getSimpleName();
+  private static final String TAG = "PreviewCallback";
 
   private final CaptureActivity activity;
   private final MultiFormatReader multiFormatReader;
   private boolean running = true;
+  ExecutorService fixedThreadPool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() * 2);
 
   DecodeHandler(CaptureActivity activity, Map<DecodeHintType,Object> hints) {
     multiFormatReader = new MultiFormatReader();
@@ -51,13 +55,14 @@ final class DecodeHandler extends Handler {
   }
 
   @Override
-  public void handleMessage(Message message) {
+  public void handleMessage(final Message message) {
     if (message == null || !running) {
       return;
     }
     switch (message.what) {
       case R.id.decode:
         decode((byte[]) message.obj, message.arg1, message.arg2);
+
         break;
       case R.id.quit:
         running = false;

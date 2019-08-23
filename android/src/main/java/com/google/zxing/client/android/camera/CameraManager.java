@@ -68,7 +68,10 @@ public final class CameraManager {
     this.configManager = new CameraConfigurationManager(context);
     previewCallback = new PreviewCallback(configManager);
   }
-  
+
+  public PreviewCallback getPreviewCallback(){
+    return previewCallback;
+  }
   /**
    * Opens the camera driver and initializes the hardware parameters.
    *
@@ -122,6 +125,13 @@ public final class CameraManager {
 
   }
 
+  public Camera getCamera(){
+    if (camera != null) {
+      return camera.getCamera();
+    } else {
+      return null;
+    }
+  }
   public synchronized boolean isOpen() {
     return camera != null;
   }
