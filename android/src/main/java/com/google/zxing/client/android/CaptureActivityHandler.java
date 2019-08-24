@@ -34,6 +34,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
+import android.widget.Toast;
 
 import java.util.Collection;
 import java.util.Map;
@@ -95,7 +96,8 @@ public final class CaptureActivityHandler extends Handler {
           }
           scaleFactor = bundle.getFloat(DecodeThread.BARCODE_SCALED_FACTOR);          
         }
-        Log.e(TAG, "二维码的结果为: "+((Result) message.obj).getText() );
+        Log.e(TAG, "二维码的结果为: " + ((Result) message.obj).getText());
+        Toast.makeText(activity,"二维码的结果为: "+((Result) message.obj).getText() ,Toast.LENGTH_SHORT).show();
         activity.handleDecode((Result) message.obj, barcode, scaleFactor);
         break;
       case R.id.decode_failed:

@@ -84,9 +84,6 @@
         <data android:scheme="zxing" android:host="scan" android:path="/"/>
       </intent-filter>
     </activity>
-    <activity android:name=".PreferencesActivity"
-              android:label="@string/preferences_name"
-              android:stateNotNeeded="true"/>
     <activity android:name=".encode.EncodeActivity"
               android:stateNotNeeded="true">
       <intent-filter>
@@ -107,10 +104,6 @@
       </intent-filter>
     </activity>
 
-    <activity android:name=".HelpActivity"
-              android:label="@string/menu_help"
-              android:screenOrientation="user"
-              android:stateNotNeeded="true"/>
   </application>
 
 </manifest>
