@@ -129,7 +129,7 @@ public final class CaptureActivity extends Activity implements SurfaceHolder.Cal
         // want to open the camera driver and measure the screen size if we're going to show the help on
         // first launch. That led to bugs where the scanning rectangle was the wrong size and partially
         // off screen.
-        cameraManager = new CameraManager(getApplication());
+        cameraManager = new CameraManager(getApplication(),this);
 
         viewfinderView = (ViewfinderView) findViewById(R.id.viewfinder_view);
         viewfinderView.setCameraManager(cameraManager);
@@ -211,34 +211,6 @@ public final class CaptureActivity extends Activity implements SurfaceHolder.Cal
         super.onDestroy();
     }
 
-    @Override
-    public boolean onKeyDown(int keyCode, KeyEvent event) {
-        switch (keyCode) {
-            case KeyEvent.KEYCODE_BACK:
-                if (source == IntentSource.NATIVE_APP_INTENT) {
-                    setResult(RESULT_CANCELED);
-                    finish();
-                    return true;
-                }
-                if ((source == IntentSource.NONE || source == IntentSource.ZXING_LINK)) {
-                    restartPreviewAfterDelay(0L);
-                    return true;
-                }
-                break;
-            case KeyEvent.KEYCODE_FOCUS:
-            case KeyEvent.KEYCODE_CAMERA:
-                // Handle these events so they don't launch the Camera app
-                return true;
-            // Use volume up/down to turn on light
-            case KeyEvent.KEYCODE_VOLUME_DOWN:
-                cameraManager.setTorch(false);
-                return true;
-            case KeyEvent.KEYCODE_VOLUME_UP:
-                cameraManager.setTorch(true);
-                return true;
-        }
-        return super.onKeyDown(keyCode, event);
-    }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -311,6 +283,16 @@ public final class CaptureActivity extends Activity implements SurfaceHolder.Cal
 
         Log.e(TAG, "handleDecode: " + rawResult.getText());
 //    cameraManager.stopPreview();
+//      restartPreviewAfterDelay(1000L);
+        resultView.setVisibility(View.VISIBLE);
+
+        ImageView barcodeImageView = (ImageView) findViewById(R.id.barcode_image_view);
+        if (barcode == null) {
+            barcodeImageView.setImageBitmap(BitmapFactory.decodeResource(getResources(),
+                    R.drawable.launcher_icon));
+        } else {
+            barcodeImageView.setImageBitmap(barcode);
+        }
     }
 
     /**

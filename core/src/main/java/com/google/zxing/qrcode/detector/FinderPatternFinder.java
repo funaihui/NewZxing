@@ -16,6 +16,8 @@
 
 package com.google.zxing.qrcode.detector;
 
+import android.os.Build;
+
 import com.google.zxing.DecodeHintType;
 import com.google.zxing.NotFoundException;
 import com.google.zxing.ResultPoint;
@@ -106,7 +108,7 @@ public class FinderPatternFinder {
         } else { // White pixel
           if ((currentState & 1) == 0) { // Counting black pixels
             if (currentState == 4) { // A winner?
-              if (foundPatternCross(stateCount)) { // Yes
+              if (foundPatternCross(stateCount)) { // Yes 是否是二维码左上角的回字
                 boolean confirmed = handlePossibleCenter(stateCount, i, j);
                 if (confirmed) {
                   // Start examining every other line. Checking each line turned out to be too
@@ -613,7 +615,9 @@ public class FinderPatternFinder {
       throw NotFoundException.getNotFoundInstance();
     }
 
-    possibleCenters.sort(moduleComparator);
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+      possibleCenters.sort(moduleComparator);
+    }
 
     double distortion = Double.MAX_VALUE;
     double[] squares = new double[3];
@@ -671,6 +675,8 @@ public class FinderPatternFinder {
     public int compare(FinderPattern center1, FinderPattern center2) {
       return Float.compare(center1.getEstimatedModuleSize(), center2.getEstimatedModuleSize());
     }
+
+
   }
 
 }
